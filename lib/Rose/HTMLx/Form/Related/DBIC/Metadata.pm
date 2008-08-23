@@ -8,7 +8,7 @@ use Rose::Object::MakeMethods::Generic (
 
 );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 NAME
 
@@ -36,7 +36,7 @@ sub discover_relationships {
 
     # get relationship objects from DBIC
     my %seen;
-    my $class   = $self->schema_class->class( $self->object_class );
+    my $class   = $self->schema_class->source( $self->object_class );
     my $moniker = $self->object_class;
 
     my @relinfos;
@@ -50,7 +50,6 @@ sub discover_relationships {
         my $relinfo   = $self->relinfo_class->new;
 
         #warn '-' x 50 . "\n$r : " . dump $dbic_info;
-        #warn "$r reverse : " . dump $foreign_info;
 
         my $type = $dbic_info->{attrs}->{accessor};
 
@@ -69,6 +68,8 @@ sub discover_relationships {
 
         # could be one2many or many2many
         if ( $type eq 'multi' ) {
+
+            #warn "$r is multi";
 
             if ( exists $dbic_info->{m2m} ) {
 
@@ -96,7 +97,11 @@ sub discover_relationships {
             }
 
         }
-        else {
+        elsif ( ref( $dbic_info->{cond} ) eq 'HASH' ) {
+
+            #warn "$r is ! multi";
+
+            #warn '-' x 50 . "\n$r : " . dump $dbic_info;
 
             # 'single' et al treat like FK
             my ( $foreign, $local ) = each %{ $dbic_info->{cond} };
@@ -105,6 +110,11 @@ sub discover_relationships {
             $relinfo->cmap( { $local => $foreign } );    # TODO ??
             $relinfo->type('foreign key');
             $relinfo->foreign_class( $dbic_info->{class} );
+        }
+        else {
+
+            croak "unknown relationship type: " . dump $dbic_info;
+
         }
 
         if ($app) {
