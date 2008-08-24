@@ -3,9 +3,15 @@ Revision history for Rose-HTMLx-Form-Related
 0.01    23 Aug 2008
         First version, released on an unsuspecting world.
 
-0.02    24 Aug 2008
+0.02    23 Aug 2008
         * switch to schema->source from schema->class when introspecting
-          components' relationships
+          DBIC components' relationships
+
+0.03    23 Aug 2008
+        * revert 0.02 change for DBIC to use both source() AND class() because
+          of the way inheritance works in RDBOHelpers
+        * added tests for all relationships
+
 
 
 

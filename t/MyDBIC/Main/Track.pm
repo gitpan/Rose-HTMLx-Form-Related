@@ -9,7 +9,7 @@ __PACKAGE__->has_many(
     'trackid'
 );
 __PACKAGE__->many_to_many(
-    'cds' => 'cd_tracks',
+    'cds' => 'track_cds',
     'cdid'
 );
 

@@ -7,7 +7,7 @@ use base qw( Rose::Object );
 
 use Rose::HTMLx::Form::Related::RelInfo;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use Rose::Object::MakeMethods::Generic (
     'scalar' => [

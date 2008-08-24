@@ -8,7 +8,7 @@ use Rose::Object::MakeMethods::Generic (
 
 );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 NAME
 
@@ -36,14 +36,12 @@ sub discover_relationships {
 
     # get relationship objects from DBIC
     my %seen;
-    my $class   = $self->schema_class->source( $self->object_class );
+    my $class   = $self->schema_class->class( $self->object_class );
     my $moniker = $self->object_class;
 
     my @relinfos;
 
     #warn '=' x 50 . "\nclass $class";
-    #carp dump $m2m;
-    #carp dump $class->relationship_map;
 
     for my $r ( $class->relationships ) {
         my $dbic_info = $class->relationship_info($r);
@@ -98,13 +96,19 @@ sub discover_relationships {
 
         }
         elsif ( ref( $dbic_info->{cond} ) eq 'HASH' ) {
-
+            
+            # 'single' et al treat like FK
+            
             #warn "$r is ! multi";
 
             #warn '-' x 50 . "\n$r : " . dump $dbic_info;
 
-            # 'single' et al treat like FK
-            my ( $foreign, $local ) = each %{ $dbic_info->{cond} };
+            # pull from source() instead of class() because
+            # of the way inheritance works in RDBOHelpers
+            my $src = $self->schema_class->source( $self->object_class );
+
+            my ( $foreign, $local )
+                = each %{ $src->relationship_info($r)->{cond} };
             $foreign =~ s/^foreign\.//;
             $local   =~ s/^self\.//;
             $relinfo->cmap( { $local => $foreign } );    # TODO ??
