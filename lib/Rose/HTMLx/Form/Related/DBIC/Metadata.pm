@@ -8,7 +8,7 @@ use Rose::Object::MakeMethods::Generic (
 
 );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 NAME
 
@@ -96,24 +96,25 @@ sub discover_relationships {
 
         }
         elsif ( ref( $dbic_info->{cond} ) eq 'HASH' ) {
-            
+
             # 'single' et al treat like FK
-            
+
             #warn "$r is ! multi";
 
             #warn '-' x 50 . "\n$r : " . dump $dbic_info;
 
-            # pull from source() instead of class() because
-            # of the way inheritance works in RDBOHelpers
-            my $src = $self->schema_class->source( $self->object_class );
-
-            my ( $foreign, $local )
-                = each %{ $src->relationship_info($r)->{cond} };
-            $foreign =~ s/^foreign\.//;
-            $local   =~ s/^self\.//;
-            $relinfo->cmap( { $local => $foreign } );    # TODO ??
-            $relinfo->type('foreign key');
-            $relinfo->foreign_class( $dbic_info->{class} );
+            my @foreign = keys %{ $dbic_info->{cond} };
+            if ( @foreign > 1 ) {
+                croak "too many conditions to identify FK in rel $r";
+            }
+            for my $foreign (@foreign) {
+                my $local = $dbic_info->{cond}->{$foreign};
+                $foreign =~ s/^foreign\.//;
+                $local   =~ s/^self\.//;
+                $relinfo->cmap( { $local => $foreign } );    # TODO ??
+                $relinfo->type('foreign key');
+                $relinfo->foreign_class( $dbic_info->{class} );
+            }
         }
         else {
 

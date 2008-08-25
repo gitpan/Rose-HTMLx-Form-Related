@@ -12,6 +12,13 @@ Revision history for Rose-HTMLx-Form-Related
           of the way inheritance works in RDBOHelpers
         * added tests for all relationships
 
+0.04    24 Aug 2008
+        * problem in 0.02 and 0.03 was not source vs class but using each()
+          on a hash ref. Might be that the internal iterator needed resetting.
+          In any case, changing to keys() fixed issue with undef values.
+
+
+
 
 
 
