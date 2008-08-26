@@ -7,13 +7,13 @@ use Rose::Object::MakeMethods::Generic (
         qw( name type method label
             object_class foreign_class foreign_column
             map_from map_to map_class cmap
-            controller controller_class
+            controller controller_class app
             )
     ],
 );
 use Carp;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 NAME
 
@@ -28,6 +28,8 @@ init_relationships().
 =head1 METHODS
 
 These are all get/set methods.
+
+=head2 app
 
 =head2 name
 
@@ -56,6 +58,21 @@ These are all get/set methods.
 =head2 controller_class
 
 =cut
+
+=head2 get_controller
+
+Returns controller() or fetches and caches a controller instance based
+on app().
+
+=cut
+
+sub get_controller {
+    my $self = shift;
+    return $self->controller if defined $self->controller;
+    my $c = $self->app->controller( $self->controller_class );
+    $self->controller($c);
+    return $c;
+}
 
 1;
 

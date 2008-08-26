@@ -11,6 +11,8 @@ WriteMakefile(
     PREREQ_PM => {
         'Test::More' => 0,
         'Rose::HTML::Objects' => 0,
+        'Rose::HTMLx::Form::Field::Boolean' => 0,
+        'Rose::HTMLx::Form::Field::Autocomplete' => 0,
         'Data::Dump' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },

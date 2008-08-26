@@ -10,7 +10,7 @@ SKIP: {
 
     eval "use DBIx::Class";
     if ($@) {
-        skip "DBIC required to test DBIC driver", 1;
+        skip "DBIC required to test DBIC driver", 20;
     }
     elsif ( $DBIx::Class::VERSION < 0.08010 ) {
         croak "DBIx::Class VERSION 0.08010 or newer required";
@@ -18,7 +18,7 @@ SKIP: {
 
     eval "use DBIx::Class::RDBOHelpers";
     if ($@) {
-        skip "DBIx::Class::RDBOHelpers required for DBIC support";
+        skip "DBIx::Class::RDBOHelpers required for DBIC support", 20;
     }
 
     use_ok('MyDBIC::Form::Cd');
