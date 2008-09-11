@@ -9,19 +9,22 @@ use Carp;
 use Rose::HTMLx::Form::Related::Metadata;
 use Rose::HTMLx::Form::Field::Boolean;
 use Rose::HTMLx::Form::Field::Autocomplete;
+use Rose::HTMLx::Form::Field::Serial;
 use Rose::HTML::Form::Field::PopUpMenu;
 
 __PACKAGE__->field_type_class(
     boolean => 'Rose::HTMLx::Form::Field::Boolean' );
 __PACKAGE__->field_type_class(
     autocomplete => 'Rose::HTMLx::Form::Field::Autocomplete' );
+__PACKAGE__->field_type_class( serial => 'Rose::HTMLx::Form::Field::Serial' );
 
 use Rose::Object::MakeMethods::Generic (
-    'scalar --get_set_init' => [qw( metadata metadata_class app_class )],
+    'scalar --get_set_init' =>
+        [qw( metadata metadata_class app_class debug )],
 
 );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 NAME
 
@@ -53,7 +56,7 @@ not part of the standard Rose::HTML::Form installation.
 =head2 init
 
 Overrides base method to call interrelate_fields() if 
-metadata->show_related_fields() is true.
+metadata->interrelate_fields() is true.
 
 =cut
 
@@ -63,7 +66,7 @@ sub init {
     for my $field ( $self->fields ) {
         $field->xhtml_error_separator('');    # let CSS decide space
     }
-    $self->interrelate_fields if $self->metadata->show_related_fields;
+    $self->interrelate_fields if $self->metadata->interrelate_fields;
 }
 
 =head2 init_metadata
@@ -97,6 +100,15 @@ Default is the emptry string.
 =cut
 
 sub init_app_class {''}
+
+=head2 init_debug
+
+Returns 0 by default, unless the RHTMLO_DEBUG env var is set to a true
+value.
+
+=cut
+
+sub init_debug { $ENV{RHTMLO_DEBUG} || 0 }
 
 =head2 object_class
 
@@ -143,8 +155,8 @@ sub field_names_by_rank {
 
 =head2 interrelate_fields( [ I<N> ] )
 
-Called by build_form() before passing to the RHTMLO (SUPER) build_form()
-method.
+Called by init() after the SUPER::init() method has been called
+if the metadata->interrelate_fields boolean is true (the default).
 
 interrelate_fields() will convert fields that return true from
 metadata->related_field() to menu or autocomplete
@@ -171,13 +183,32 @@ sub interrelate_fields {
 
     for my $field ( @{ $self->metadata->related_field_names } ) {
         my $rel_info = $self->metadata->related_field($field) or next;
+
+        # do not bother with relationships that represent
+        # multiple columns, since these really need a field type
+        # that does not exist: something like CXC::YUI DataTable picker
+        if ( scalar keys %{ $rel_info->foreign_column } > 1 ) {
+            $self->debug
+                and warn
+                "too many columns in rel_info $rel_info->{name} for $field";
+            next;
+        }
+
         my $count = $count_cache{ $rel_info->foreign_class }
             || $self->get_objects_count(
             object_class => $rel_info->foreign_class );
 
         # defer $count == undef, as with DBIC deploy()
         # TODO someway to re-try later??
-        next unless defined $count;
+        unless ( defined $count ) {
+            if ( $self->debug ) {
+                warn "get_objects_count returned undef for $field";
+            }
+            return;
+        }
+        elsif ( $self->debug ) {
+            warn "get_objects_count returned $count for $field";
+        }
 
         $count_cache{ $rel_info->foreign_class } = $count;
 
@@ -229,13 +260,18 @@ sub _convert_field_to_menu {
     my $field = $self->field($field_name);
     return if $field->isa('Rose::HTML::Form::Field::Hidden');
     return if defined $field->type and $field->type eq 'hidden';
+    return if $field->isa('Rose::HTML::Form::Field::PopUpMenu');
 
-    my $fk = $rel_info->foreign_column;
+    $self->debug and warn "$field_name converting to menu";
+
+    my $fk = $rel_info->foreign_column_for($field_name);
     my $to_show
         = $self->metadata->show_related_field_using( $rel_info->foreign_class,
         $field_name );
 
-    return if !defined $to_show;    
+    $self->debug and warn "$field_name to_show = $to_show";
+
+    return if !defined $to_show;
 
     my $all_values_hash = {
         map { $_->$fk => $_->$to_show } @{
@@ -270,6 +306,7 @@ sub _convert_field_to_autocomplete {
     my $field      = $self->field($field_name);
     return if $field->isa('Rose::HTML::Form::Field::Hidden');
     return if defined $field->type and $field->type eq 'hidden';
+    return if $field->isa('Rose::HTMLx::Form::Field::Autocomplete');
 
     #dump $meta;
     my $app = $self->app || $self->app_class

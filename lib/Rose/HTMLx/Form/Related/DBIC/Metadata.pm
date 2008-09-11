@@ -8,7 +8,7 @@ use Rose::Object::MakeMethods::Generic (
 
 );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 NAME
 
@@ -25,11 +25,18 @@ Only overriden or new methods are described here.
 =head2 discover_relationships
 
 Implements DBIC relationship introspection.
+As with DBIC->get_objects() and DBIC->get_objects_count(),
+discover_relationships() will be a no-op of the 
+DBIC_DEPLOY_IN_PROGRESS env var is true.
 
 =cut
 
 sub discover_relationships {
     my $self = shift;
+
+    if ( $ENV{DBIC_DEPLOY_IN_PROGRESS} ) {
+        return $self->relationships( [] );
+    }
 
     # if running under Catalyst (e.g.) get controller info
     my $app = $self->form->app_class || $self->form->app;
@@ -37,13 +44,14 @@ sub discover_relationships {
     # get relationship objects from DBIC
     my %seen;
     my $class   = $self->schema_class->class( $self->object_class );
-    my $moniker = $self->object_class;
+    my $moniker = $self->form->_get_moniker( $self->schema_class, $class );
+    my $source  = $self->schema_class->source($moniker);
+
+    #warn '=' x 50 . "\nclass $class moniker $moniker source $source";
 
     my @relinfos;
 
-    #warn '=' x 50 . "\nclass $class";
-
-    for my $r ( $class->relationships ) {
+    for my $r ( $source->relationships ) {
         my $dbic_info = $class->relationship_info($r);
         my $relinfo   = $self->relinfo_class->new;
 
@@ -72,6 +80,8 @@ sub discover_relationships {
             if ( exists $dbic_info->{m2m} ) {
 
                 my $m2m = $dbic_info->{m2m};
+                
+                #warn dump $m2m;
 
                 $relinfo->type('many to many');
                 $relinfo->method( $m2m->{method_name} );
@@ -91,17 +101,14 @@ sub discover_relationships {
 
                 # one2many
                 my @foreign = keys %{ $dbic_info->{cond} };
-                if ( @foreign > 1 ) {
-                    croak "too many conditions to identify FK in rel $r";
-                }
+                $relinfo->cmap( {} );
                 for my $foreign (@foreign) {
                     my $local = $dbic_info->{cond}->{$foreign};
                     $foreign =~ s/^foreign\.//;
                     $local   =~ s/^self\.//;
-                    $relinfo->cmap( { $local => $foreign } );    # TODO ??
+                    $relinfo->cmap->{$local} = $foreign;
                     $relinfo->type('one to many');
                     $relinfo->foreign_class( $dbic_info->{class} );
-                    last;
                 }
 
             }
@@ -110,23 +117,15 @@ sub discover_relationships {
         elsif ( ref( $dbic_info->{cond} ) eq 'HASH' ) {
 
             # 'single' et al treat like FK
-
-            #warn "$r is ! multi";
-
-            #warn '-' x 50 . "\n$r : " . dump $dbic_info;
-
             my @foreign = keys %{ $dbic_info->{cond} };
-            if ( @foreign > 1 ) {
-                croak "too many conditions to identify FK in rel $r";
-            }
+            $relinfo->cmap( {} );
             for my $foreign (@foreign) {
                 my $local = $dbic_info->{cond}->{$foreign};
                 $foreign =~ s/^foreign\.//;
                 $local   =~ s/^self\.//;
-                $relinfo->cmap( { $local => $foreign } );    # TODO ??
+                $relinfo->cmap->{$local} = $foreign;
                 $relinfo->type('foreign key');
                 $relinfo->foreign_class( $dbic_info->{class} );
-                last;
             }
         }
         else {
@@ -140,9 +139,11 @@ sub discover_relationships {
             $relinfo->app($app);
 
             # create URL and controller if available.
-            my $prefix = $self->schema_class->class( $self->object_class )
-                ->schema_class_prefix;
+            my $prefix          = $class->schema_class_prefix;
             my $controller_name = $relinfo->foreign_class;
+            if ( !$controller_name ) {
+                croak "no foreign class in relinfo: " . dump $relinfo;
+            }
             $controller_name =~ s/^${prefix}:://;
             my $controller_prefix = $self->controller_prefix;
             $relinfo->controller_class(

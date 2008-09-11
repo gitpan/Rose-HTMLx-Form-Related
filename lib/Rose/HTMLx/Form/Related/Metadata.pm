@@ -7,7 +7,7 @@ use base qw( Rose::Object );
 
 use Rose::HTMLx::Form::Related::RelInfo;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use Rose::Object::MakeMethods::Generic (
     'scalar' => [
@@ -25,6 +25,7 @@ use Rose::Object::MakeMethods::Generic (
         'show_related_values' => { default => 1 },
         'show_related_fields' => { default => 1 },
         'show_relationships'  => { default => 1 },
+        'interrelate_fields'  => { default => 1 },
     ],
 );
 
@@ -59,6 +60,9 @@ sub init {
         croak "Rose::HTMLx::Form::Related object required";
     }
     $self->_build;
+    if ( $self->form->debug ) {
+        dump $self;
+    }
     return $self;
 }
 
@@ -243,11 +247,16 @@ sub _build {
         $relationship_info{ $relinfo->name } = $relinfo;
 
         if ( my $colmap = $relinfo->cmap ) {
+            $relinfo->foreign_column( {} );
             for my $field_name ( @{ $self->form->field_names } ) {
                 next unless exists $colmap->{$field_name};
+
                 #warn
-                #    "field_name $field_name is in cmap ... adding to related_fields";
-                $relinfo->foreign_column( $colmap->{$field_name} );
+                #    "field_name $field_name is in cmap";
+
+                $relinfo->foreign_column->{$field_name}
+                    = $colmap->{$field_name};
+
                 $related_fields{$field_name} = $relinfo;
             }
         }
@@ -404,12 +413,14 @@ sub foreign_field_value {
     my $self       = shift;
     my $field_name = shift or croak "field_name required";
     my $object     = shift or croak "data object required";
-    my $info       = $self->related_field($field_name) or return;
+    return unless $self->is_related_field($field_name);
+    my $info = $self->related_field($field_name) or return;
     my $foreign_field
         = $self->show_related_field_using( $info->{foreign_class},
         $field_name );
     my $method         = $info->{method};
     my $foreign_object = $object->$method;
+
     if ( defined $foreign_object ) {
         return $foreign_object->$foreign_field;
     }

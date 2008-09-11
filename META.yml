@@ -1,15 +1,18 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Rose-HTMLx-Form-Related
-version:      0.06
-version_from: lib/Rose/HTMLx/Form/Related.pm
-installdirs:  site
-requires:
+--- #YAML:1.0
+name:                Rose-HTMLx-Form-Related
+version:             0.07
+abstract:            RHTMLO forms, living together
+license:             ~
+author:              
+    - Peter Karman <karman@cpan.org>
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
     Data::Dump:                    0
     Rose::HTML::Objects:           0
     Rose::HTMLx::Form::Field::Autocomplete: 0
     Rose::HTMLx::Form::Field::Boolean: 0
     Test::More:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

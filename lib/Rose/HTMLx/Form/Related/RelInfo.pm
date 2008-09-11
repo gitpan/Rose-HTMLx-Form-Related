@@ -13,7 +13,7 @@ use Rose::Object::MakeMethods::Generic (
 );
 use Carp;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 NAME
 
@@ -72,6 +72,24 @@ sub get_controller {
     my $c = $self->app->controller( $self->controller_class );
     $self->controller($c);
     return $c;
+}
+
+=head2 foreign_column_for( I<field_name> )
+
+Returns the name of the foreign column related to I<field_name>.
+Shortcut for looking up items in cmap().
+
+=cut
+
+sub foreign_column_for {
+    my $self = shift;
+    my $name = shift;
+    if ( ref( $self->foreign_column ) ) {
+        return $self->foreign_column->{$name};
+    }
+    else {
+        return $self->foreign_column;
+    }
 }
 
 1;
