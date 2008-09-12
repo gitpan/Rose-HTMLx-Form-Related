@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Rose-HTMLx-Form-Related
-version:             0.07
+version:             0.08
 abstract:            RHTMLO forms, living together
 license:             ~
 author:              
@@ -12,6 +12,7 @@ requires:
     Rose::HTML::Objects:           0
     Rose::HTMLx::Form::Field::Autocomplete: 0
     Rose::HTMLx::Form::Field::Boolean: 0
+    Rose::HTMLx::Form::Field::Serial: 0.002
     Test::More:                    0
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html
