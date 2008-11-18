@@ -7,7 +7,7 @@ use base qw( Rose::Object );
 
 use Rose::HTMLx::Form::Related::RelInfo;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 use Rose::Object::MakeMethods::Generic (
     'scalar' => [
@@ -20,7 +20,7 @@ use Rose::Object::MakeMethods::Generic (
         'controller_prefix', 'field_uris',
         'related_field_map', 'default_sort_by',
         'default_selected',  'takes_object_as_argument',
-        'field_methods'
+        'field_methods',
     ],
     'boolean --get_set' => [
         'show_related_values' => { default => 1 },
@@ -434,6 +434,12 @@ sub foreign_field_value {
     my $foreign_object = $object->$method;
 
     if ( defined $foreign_object ) {
+
+        # special RDBOHelper and MoreHelpers method
+        if ( $foreign_object->can('unique_value') ) {
+            $foreign_field = 'unique_value';
+        }
+
         return $foreign_object->$foreign_field;
     }
     else {
