@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Rose-HTMLx-Form-Related
-version:            0.12
+version:            0.13
 abstract:           RHTMLO forms, living together
 author:
     - Peter Karman <karman@cpan.org>
@@ -14,6 +14,7 @@ requires:
     Rose::HTMLx::Form::Field::Autocomplete:  0
     Rose::HTMLx::Form::Field::Boolean:  0
     Rose::HTMLx::Form::Field::Serial:  0.002
+    Scalar::Util:         0
     Test::More:           0
 no_index:
     directory:
