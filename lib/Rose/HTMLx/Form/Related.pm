@@ -24,7 +24,7 @@ use Rose::Object::MakeMethods::Generic (
 
 );
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 =head1 NAME
 
@@ -207,7 +207,7 @@ sub interrelate_fields {
             return;
         }
         elsif ( $self->debug ) {
-            warn "get_objects_count returned $count for $field";
+            warn "get_objects_count returned $count for $field (max = $max)";
         }
 
         $count_cache{ $rel_info->foreign_class } = $count;
@@ -219,6 +219,8 @@ sub interrelate_fields {
             $self->_convert_field_to_menu( $field, $rel_info );
         }
     }
+    
+    $self->debug and warn "interrelated fields complete for $self";
 }
 
 =head2 get_objects_count( object_class => I<class_name> )
@@ -267,6 +269,13 @@ sub __set_menu_options {
     my $objects
         = $self->get_objects( object_class => $rel_info->foreign_class );
     my $hash = { map { $_->$fk => $_->$to_show } @$objects };
+
+    # allow for a non-value (null)
+    # which is particularly useful for search forms
+    unless ( exists $hash->{''} ) {
+        $hash->{''} = '';
+    }
+
     $menu->options(
         [   sort { $hash->{$a} cmp $hash->{$b} }
                 keys %$hash
@@ -314,18 +323,24 @@ sub _convert_field_to_autocomplete {
     return if defined $field->type and $field->type eq 'hidden';
     return if $field->isa('Rose::HTMLx::Form::Field::Autocomplete');
 
-    #dump $meta;
+    #dump $self;
     my $app = $self->app || $self->app_class
         or croak "app() or app_class() required for autocomplete";
     unless ( $app->can('uri_for') ) {
         croak "app $app does not implement a uri_for() method";
     }
+    
+    $self->debug && warn "convert $field_name to autocomplete";
 
     my $to_show
         = $self->metadata->show_related_field_using( $rel_info->foreign_class,
         $field_name );
 
     return if !defined $to_show;
+
+    $self->debug && warn "show_related field using $to_show";
+
+    my $controller = $rel_info->get_controller or return;
 
     my $ac = Rose::HTMLx::Form::Field::Autocomplete->new(
         id       => $field->id,
@@ -334,12 +349,10 @@ sub _convert_field_to_autocomplete {
         label    => $field->label,
         tabindex => $field->tabindex,
         rank     => $field->rank,
-        size         => 30,                  # ignore original $field size
-        maxlength    => $field->maxlength,
-        autocomplete => $app->uri_for(
-            '/' . $rel_info->get_controller->path_prefix,
-            'autocomplete'
-        ),
+        size      => 30,                  # ignore original $field size
+        maxlength => $field->maxlength,
+        autocomplete =>
+            $app->uri_for( '/' . $controller->path_prefix, 'autocomplete' ),
         limit => 30,
     );
 
