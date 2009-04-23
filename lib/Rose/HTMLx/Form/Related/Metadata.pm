@@ -7,7 +7,7 @@ use base qw( Rose::Object );
 
 use Rose::HTMLx::Form::Related::RelInfo;
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 use Rose::Object::MakeMethods::Generic (
     'scalar' => [
@@ -18,7 +18,8 @@ use Rose::Object::MakeMethods::Generic (
         'relationships',     'relinfo_class',
         'object_class',      'labels',
         'controller_prefix', 'field_uris',
-        'related_field_map', 'default_sort_by',
+        'related_field_map', 'sort_prefix',
+        'default_sort_by',   'default_related_sort_by',
         'default_selected',  'takes_object_as_argument',
         'field_methods',
     ],
@@ -124,6 +125,18 @@ labels to non-fields like relationship names.
 
 sub init_labels { return {} }
 
+=head2 init_sort_prefix
+
+Should return a hashref of method (field) names to any strings that should
+be prefixed to the name for sorting. This is to support (for example)
+sorts on multi-table joins.
+
+Default is empty hashref.
+
+=cut
+
+sub init_sort_prefix { {} }
+
 =head2 init_object_class
 
 Should return the name of the ORM object class the Form class represents.
@@ -152,11 +165,22 @@ sub init_field_uris {
 Should return the name of the field to sort by in (for example)
 search results.
 
-Default is null (emptry string).
+Default is null (empty string).
 
 =cut
 
 sub init_default_sort_by { return '' }
+
+=head2 init_default_related_sort_by
+
+Should return the name of the related field to sort by in (for
+example) search results that join tables.
+
+Default is null (empty string).
+
+=cut
+
+sub init_default_related_sort_by { return '' }
 
 =head2 init_default_selected
 
@@ -264,7 +288,7 @@ sub _build {
         croak "relationships() should be an ARRAY reference";
     }
 
-    for my $relinfo ( @{ $self->relationships } ) {
+RELINFO: for my $relinfo ( @{ $self->relationships } ) {
 
         if ( ref($relinfo) eq 'HASH' ) {
             $relinfo = bless( $relinfo, $self->relinfo_class );
@@ -275,9 +299,15 @@ sub _build {
 
         $relationship_info{ $relinfo->name } = $relinfo;
 
+        # skip unless explicitly defined as a FK
+        # so we don't get PKs and UKs in here by mistake
+        next RELINFO unless $relinfo->type eq 'foreign key';
+
         if ( my $colmap = $relinfo->cmap ) {
             $relinfo->foreign_column( {} );
-            for my $field_name ( @{ $self->form->field_names } ) {
+        FIELDNAME: for my $field_name ( @{ $self->form->field_names } ) {
+
+                # skip unless it's in the column map
                 next unless exists $colmap->{$field_name};
 
                 # avoid condition where o2m overrides a FK
