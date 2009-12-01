@@ -1,12 +1,14 @@
 --- #YAML:1.0
 name:               Rose-HTMLx-Form-Related
-version:            0.17
+version:            0.18
 abstract:           RHTMLO forms, living together
 author:
     - Peter Karman <karman@cpan.org>
 license:            unknown
 distribution_type:  module
 configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
     ExtUtils::MakeMaker:  0
 requires:
     Data::Dump:           0
@@ -21,7 +23,7 @@ no_index:
     directory:
         - t
         - inc
-generated_by:       ExtUtils::MakeMaker version 6.46
+generated_by:       ExtUtils::MakeMaker version 6.54
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4
