@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Rose-HTMLx-Form-Related
-version:            0.18
+version:            0.19
 abstract:           RHTMLO forms, living together
 author:
     - Peter Karman <karman@cpan.org>
@@ -12,6 +12,7 @@ build_requires:
     ExtUtils::MakeMaker:  0
 requires:
     Data::Dump:           0
+    MRO::Compat:          0
     Rose::HTML::Objects:  0
     Rose::HTMLx::Form::Field::Autocomplete:  0
     Rose::HTMLx::Form::Field::Boolean:  0
