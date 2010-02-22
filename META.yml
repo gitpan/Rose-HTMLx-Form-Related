@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Rose-HTMLx-Form-Related
-version:            0.19
+version:            0.20
 abstract:           RHTMLO forms, living together
 author:
     - Peter Karman <karman@cpan.org>
