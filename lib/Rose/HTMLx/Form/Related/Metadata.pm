@@ -7,7 +7,7 @@ use base qw( Rose::Object );
 
 use Rose::HTMLx::Form::Related::RelInfo;
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 
 use Rose::Object::MakeMethods::Generic (
     'scalar' => [
@@ -301,7 +301,11 @@ RELINFO: for my $relinfo ( @{ $self->relationships } ) {
 
         # skip unless explicitly defined as a FK
         # so we don't get PKs and UKs in here by mistake
-        next RELINFO unless $relinfo->type eq 'foreign key';
+        if (    $relinfo->type ne 'foreign key'
+            and $relinfo->type ne 'many to one' )
+        {
+            next RELINFO;
+        }
 
         if ( my $colmap = $relinfo->cmap ) {
             $relinfo->foreign_column( {} );
@@ -336,6 +340,13 @@ RELINFO: for my $relinfo ( @{ $self->relationships } ) {
 This method must be overriden by model-specific subclasses. The method
 should interrogate object_class() and set the array ref of relinfo_class()
 objects via the relationships() mutator method.
+A Rose::DB::Object-derived object that is a subclass of
+Rose::DBx::Garden::Catalyst::Object will have a C<schema_class_prefix>
+method, which is to be used in determining the name of the Controller
+class associated with related Forms.  Specifically, the return value
+of C<schema_class_prefix> will be stripped from the beginning of the
+related Form's class name, and will be replaced with the value of
+C<controller_prefix> if such is defined.
 
 =cut
 
@@ -451,8 +462,8 @@ sub show_related_field_using {
     if ( exists $self->related_field_map->{$field} ) {
         return $self->related_field_map->{$field};
     }
-    
-    if ($fclass->can('unique_value')) {
+
+    if ( $fclass->can('unique_value') ) {
         return 'unique_value';
     }
 
