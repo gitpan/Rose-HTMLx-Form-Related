@@ -27,4 +27,4 @@ requires:
   Rose::HTMLx::Form::Field::Serial: 0.002
   Scalar::Util: 0
   Test::More: 0
-version: 0.23
+version: 0.24
